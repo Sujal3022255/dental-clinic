@@ -15,58 +15,101 @@ async function main() {
   });
 
   if (existingAdmin) {
-    console.log('Admin user already exists');
-    return;
-  }
+    console.log('✅ Admin user already exists');
+  } else {
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-  const hashedPassword = await bcrypt.hash(adminPassword, 10);
-
-  const admin = await prisma.user.create({
-    data: {
-      email: adminEmail,
-      password: hashedPassword,
-      role: 'ADMIN',
-    },
-  });
-
-  console.log('✅ Admin user created successfully!');
-  console.log('Email:', adminEmail);
-  console.log('Password:', adminPassword);
-  console.log('User ID:', admin.id);
-
-  // Optionally create sample dentist
-  const dentistEmail = 'dentist@dentalclinic.com';
-  const dentistPassword = 'dentist123';
-
-  const existingDentist = await prisma.user.findUnique({
-    where: { email: dentistEmail },
-  });
-
-  if (!existingDentist) {
-    const dentistHashedPassword = await bcrypt.hash(dentistPassword, 10);
-
-    const dentist = await prisma.user.create({
+    const admin = await prisma.user.create({
       data: {
-        email: dentistEmail,
-        password: dentistHashedPassword,
-        role: 'DENTIST',
-        dentist: {
-          create: {
-            firstName: 'Dr. Sarah',
-            lastName: 'Johnson',
-            specialization: 'General Dentistry',
-            licenseNumber: 'DDS-2024-001',
-            phone: '+1234567890',
-            bio: 'Experienced general dentist with 10+ years of practice',
-            experience: 10,
-          },
-        },
+        email: adminEmail,
+        password: hashedPassword,
+        role: 'ADMIN',
       },
     });
 
-    console.log('✅ Sample dentist created!');
-    console.log('Email:', dentistEmail);
-    console.log('Password:', dentistPassword);
+    console.log('✅ Admin user created successfully!');
+    console.log('Email:', adminEmail);
+    console.log('Password:', adminPassword);
+    console.log('User ID:', admin.id);
+  }
+
+  // Create sample dentists
+  const dentists = [
+    {
+      email: 'bijay.shah@dentalclinic.com',
+      password: 'dentist123',
+      firstName: 'Bijay Shah',
+      lastName: 'Tali',
+      specialization: 'Orthodontics',
+      licenseNumber: 'DDS-2024-101',
+      phone: '+9779841234567',
+      bio: 'Specialist in orthodontics with expertise in braces and teeth alignment',
+      experience: 12,
+    },
+    {
+      email: 'aayush.mahata@dentalclinic.com',
+      password: 'dentist123',
+      firstName: 'Aayush',
+      lastName: 'Mahata',
+      specialization: 'Endodontics',
+      licenseNumber: 'DDS-2024-102',
+      phone: '+9779841234568',
+      bio: 'Expert in root canal treatments and endodontic procedures',
+      experience: 8,
+    },
+    {
+      email: 'anand.sharma@dentalclinic.com',
+      password: 'dentist123',
+      firstName: 'Anand',
+      lastName: 'Sharma',
+      specialization: 'Periodontics',
+      licenseNumber: 'DDS-2024-103',
+      phone: '+9779841234569',
+      bio: 'Specialist in gum disease treatment and dental implants',
+      experience: 15,
+    },
+    {
+      email: 'jhatuu.don@dentalclinic.com',
+      password: 'dentist123',
+      firstName: 'Jhatuu',
+      lastName: 'Don',
+      specialization: 'Cosmetic Dentistry',
+      licenseNumber: 'DDS-2024-104',
+      phone: '+9779841234570',
+      bio: 'Expert in cosmetic procedures, teeth whitening, and smile makeovers',
+      experience: 10,
+    },
+  ];
+
+  for (const dentistData of dentists) {
+    const existingDentist = await prisma.user.findUnique({
+      where: { email: dentistData.email },
+    });
+
+    if (!existingDentist) {
+      const dentistHashedPassword = await bcrypt.hash(dentistData.password, 10);
+
+      await prisma.user.create({
+        data: {
+          email: dentistData.email,
+          password: dentistHashedPassword,
+          role: 'DENTIST',
+          dentist: {
+            create: {
+              firstName: dentistData.firstName,
+              lastName: dentistData.lastName,
+              specialization: dentistData.specialization,
+              licenseNumber: dentistData.licenseNumber,
+              phone: dentistData.phone,
+              bio: dentistData.bio,
+              experience: dentistData.experience,
+            },
+          },
+        },
+      });
+
+      console.log(`✅ Dentist created: Dr. ${dentistData.firstName} ${dentistData.lastName}`);
+    }
   }
 
   // Optionally create sample patient
