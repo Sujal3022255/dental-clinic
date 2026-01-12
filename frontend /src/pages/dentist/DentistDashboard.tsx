@@ -102,7 +102,8 @@ export default function DentistDashboard() {
       });
       if (response.ok) {
         const data = await response.json();
-        setDentistProfile(data.dentist);
+        console.log('Profile data:', data); // Debug log
+        setDentistProfile(data.user?.dentist);
       }
     } catch (error) {
       console.error('Failed to load dentist profile:', error);
