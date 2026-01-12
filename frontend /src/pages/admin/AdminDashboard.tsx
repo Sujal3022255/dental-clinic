@@ -21,7 +21,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 
-type TabType = 'dashboard' | 'users' | 'appointments' | 'content';
+type TabType = 'dashboard' | 'users' | 'patients' | 'dentists' | 'appointments' | 'content';
 
 interface User {
   id: string;
@@ -204,15 +204,27 @@ export default function AdminDashboard() {
     },
     {
       icon: <Users className="w-5 h-5" />,
-      label: 'User Management',
-      active: activeTab === 'users',
-      onClick: () => setActiveTab('users')
+      label: 'Patients',
+      active: activeTab === 'patients',
+      onClick: () => setActiveTab('patients')
+    },
+    {
+      icon: <Briefcase className="w-5 h-5" />,
+      label: 'Dentists',
+      active: activeTab === 'dentists',
+      onClick: () => setActiveTab('dentists')
     },
     {
       icon: <Calendar className="w-5 h-5" />,
       label: 'Appointments',
       active: activeTab === 'appointments',
       onClick: () => setActiveTab('appointments')
+    },
+    {
+      icon: <Users className="w-5 h-5" />,
+      label: 'All Users',
+      active: activeTab === 'users',
+      onClick: () => setActiveTab('users')
     },
     {
       icon: <FileText className="w-5 h-5" />,
@@ -563,6 +575,193 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+          </div>
+        );
+
+      case 'patients':
+        return (
+          <div>
+            <div className="mb-6 flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Patient Management</h1>
+                <p className="text-gray-600 mt-1">Manage all registered patients</p>
+              </div>
+              <button
+                onClick={() => {
+                  resetForm();
+                  setFormData({ ...formData, role: 'patient' });
+                  setShowAddUserModal(true);
+                }}
+                className="flex items-center space-x-2 bg-[#0b8fac] text-white px-6 py-3 rounded-lg hover:bg-[#096f85] transition"
+              >
+                <UserPlus className="w-5 h-5" />
+                <span>Add Patient</span>
+              </button>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {users.filter(u => u.role === 'patient').map((patient) => (
+                    <tr key={patient.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-[#0b8fac] rounded-full flex items-center justify-center text-white font-bold">
+                            {patient.full_name.charAt(0)}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{patient.full_name}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Mail className="w-4 h-4 mr-2 text-gray-400" />
+                          {patient.email}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                          {patient.phone || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(patient.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
+                        <button
+                          onClick={() => openEditModal(patient)}
+                          className="text-[#0b8fac] hover:text-[#096f85] font-medium"
+                        >
+                          <Edit className="w-4 h-4 inline mr-1" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(patient.id)}
+                          className="text-red-600 hover:text-red-900 font-medium"
+                        >
+                          <Trash2 className="w-4 h-4 inline mr-1" />
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {users.filter(u => u.role === 'patient').length === 0 && (
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No patients registered yet</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'dentists':
+        return (
+          <div>
+            <div className="mb-6 flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Dentist Management</h1>
+                <p className="text-gray-600 mt-1">Manage all registered dentists</p>
+              </div>
+              <button
+                onClick={() => {
+                  resetForm();
+                  setFormData({ ...formData, role: 'dentist' });
+                  setShowAddUserModal(true);
+                }}
+                className="flex items-center space-x-2 bg-[#0b8fac] text-white px-6 py-3 rounded-lg hover:bg-[#096f85] transition"
+              >
+                <UserPlus className="w-5 h-5" />
+                <span>Add Dentist</span>
+              </button>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Specialization</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {users.filter(u => u.role === 'dentist').map((dentist) => (
+                    <tr key={dentist.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
+                            Dr.
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">Dr. {dentist.full_name}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Mail className="w-4 h-4 mr-2 text-gray-400" />
+                          {dentist.email}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                          {dentist.phone || 'N/A'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <Briefcase className="w-4 h-4 mr-2 text-gray-400" />
+                          General Dentistry
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(dentist.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
+                        <button
+                          onClick={() => openEditModal(dentist)}
+                          className="text-[#0b8fac] hover:text-[#096f85] font-medium"
+                        >
+                          <Edit className="w-4 h-4 inline mr-1" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(dentist.id)}
+                          className="text-red-600 hover:text-red-900 font-medium"
+                        >
+                          <Trash2 className="w-4 h-4 inline mr-1" />
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {users.filter(u => u.role === 'dentist').length === 0 && (
+                <div className="text-center py-12">
+                  <Briefcase className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No dentists registered yet</p>
+                </div>
+              )}
+            </div>
           </div>
         );
 
