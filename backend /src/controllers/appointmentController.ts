@@ -187,6 +187,65 @@ export const deleteAppointment = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Cancel appointment - allows patients to cancel their own appointments
+export const cancelAppointment = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    const userRole = req.user?.role;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Get the appointment to verify ownership
+    const existingAppointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        patient: { include: { user: true } },
+      },
+    });
+
+    if (!existingAppointment) {
+      return res.status(404).json({ error: 'Appointment not found' });
+    }
+
+    // Check if user is the patient or admin/dentist
+    const isPatient = existingAppointment.patient.userId === userId;
+    const isDentist = userRole === 'DENTIST';
+    const isAdmin = userRole === 'ADMIN';
+
+    if (!isPatient && !isDentist && !isAdmin) {
+      return res.status(403).json({ error: 'Not authorized to cancel this appointment' });
+    }
+
+    // Update status to CANCELLED
+    const appointment = await prisma.appointment.update({
+      where: { id },
+      data: {
+        status: 'CANCELLED',
+        updatedAt: new Date(),
+      },
+      include: {
+        patient: {
+          include: { user: { select: { email: true } } },
+        },
+        dentist: {
+          include: { user: { select: { email: true } } },
+        },
+      },
+    });
+
+    res.json({
+      message: 'Appointment cancelled successfully',
+      appointment,
+    });
+  } catch (error) {
+    console.error('Cancel appointment error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
 // Reschedule appointment
 export const rescheduleAppointment = async (req: AuthRequest, res: Response) => {
   try {

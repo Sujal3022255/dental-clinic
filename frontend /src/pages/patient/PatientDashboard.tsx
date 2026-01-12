@@ -624,21 +624,21 @@ export default function PatientDashboard() {
                 <div key={dentist.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <div className="flex items-center mb-4">
                     <div className="w-16 h-16 bg-[#0b8fac] rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                      {dentist.full_name.charAt(0)}
+                      {(dentist.firstName || 'D').charAt(0)}
                     </div>
                     <div className="ml-4">
-                      <h3 className="font-bold text-gray-900">Dr. {dentist.full_name}</h3>
-                      <p className="text-sm text-gray-600">Dentist</p>
+                      <h3 className="font-bold text-gray-900">Dr. {dentist.firstName} {dentist.lastName}</h3>
+                      <p className="text-sm text-gray-600">{dentist.specialization || 'Dentist'}</p>
                     </div>
                   </div>
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center text-sm text-gray-600">
                       <Mail className="w-4 h-4 mr-2" />
-                      {dentist.email}
+                      {dentist.user?.email || 'N/A'}
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                       <Phone className="w-4 h-4 mr-2" />
-                      {dentist.phone}
+                      {dentist.phone || 'N/A'}
                     </div>
                   </div>
                   <button

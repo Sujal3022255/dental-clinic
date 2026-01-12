@@ -62,7 +62,7 @@ export const appointmentService = {
 
   // Cancel appointment (set status to CANCELLED)
   cancel: async (id: string): Promise<{ message: string; appointment: Appointment }> => {
-    const response = await apiClient.patch(`/appointments/${id}/status`, { status: 'CANCELLED' });
+    const response = await apiClient.patch(`/appointments/${id}/cancel`);
     return response.data;
   },
 
