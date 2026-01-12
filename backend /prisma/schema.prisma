@@ -24,6 +24,7 @@ model User {
   // Relations
   patient   Patient?
   dentist   Dentist?
+  content   Content[]
   
   @@map("users")
 }
@@ -141,4 +142,24 @@ model Availability {
   dentist Dentist @relation(fields: [dentistId], references: [id], onDelete: Cascade)
   
   @@map("availability")
+}
+
+// Content model for health tips, blogs, and documents
+model Content {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @db.Text
+  type        String   // 'tip', 'blog', 'document'
+  imageUrl    String?
+  documentUrl String?
+  tags        String[]
+  published   Boolean  @default(true)
+  authorId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  
+  @@map("content")
 }

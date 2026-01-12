@@ -5,6 +5,7 @@ import { appointmentService } from '../../services/appointmentService';
 import { treatmentService } from '../../services/treatmentService';
 import { userService } from '../../services/userService';
 import { dentistService } from '../../services/dentistService';
+import { contentService } from '../../services/contentService';
 import {
   LayoutDashboard,
   Users,
@@ -20,7 +21,9 @@ import {
   Phone,
   Briefcase,
   AlertCircle,
-  Clock
+  Clock,
+  Image,
+  FileUp
 } from 'lucide-react';
 
 type TabType = 'dashboard' | 'users' | 'patients' | 'dentists' | 'appointments' | 'timeslots' | 'content';
@@ -63,9 +66,12 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [dentists, setDentists] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [content, setContent] = useState<any[]>([]);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showEditUserModal, setShowEditUserModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [showContentModal, setShowContentModal] = useState(false);
+  const [selectedContent, setSelectedContent] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -80,10 +86,21 @@ export default function AdminDashboard() {
     licenseNumber: ''
   });
 
+  // Content form states
+  const [contentFormData, setContentFormData] = useState({
+    title: '',
+    description: '',
+    type: 'tip' as 'tip' | 'blog' | 'document',
+    imageUrl: '',
+    documentUrl: '',
+    tags: [] as string[]
+  });
+
   useEffect(() => {
     loadUsers();
     loadDentists();
     loadAppointments();
+    loadContent();
   }, []);
 
   const loadUsers = () => {
@@ -250,6 +267,103 @@ export default function AdminDashboard() {
       password: ''
     });
     setShowEditUserModal(true);
+  };
+
+  // Content Management Functions
+  const loadContent = async () => {
+    try {
+      const data = await contentService.getAll();
+      setContent(data.content || []);
+    } catch (error: any) {
+      console.error('Failed to load content:', error);
+    }
+  };
+
+  const handleAddContent = async () => {
+    if (!contentFormData.title || !contentFormData.description) {
+      alert('Please fill in title and description');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await contentService.create(contentFormData);
+      await loadContent();
+      setShowContentModal(false);
+      resetContentForm();
+      alert('Content created successfully!');
+    } catch (error: any) {
+      console.error('Failed to create content:', error);
+      alert(error.response?.data?.error || 'Failed to create content');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateContent = async () => {
+    if (!selectedContent || !contentFormData.title) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await contentService.update(selectedContent.id, contentFormData);
+      await loadContent();
+      setShowContentModal(false);
+      setSelectedContent(null);
+      resetContentForm();
+      alert('Content updated successfully!');
+    } catch (error: any) {
+      console.error('Failed to update content:', error);
+      alert(error.response?.data?.error || 'Failed to update content');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteContent = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this content?')) return;
+
+    try {
+      setLoading(true);
+      await contentService.delete(id);
+      await loadContent();
+      alert('Content deleted successfully');
+    } catch (error: any) {
+      console.error('Failed to delete content:', error);
+      alert(error.response?.data?.error || 'Failed to delete content');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openContentModal = (content?: any) => {
+    if (content) {
+      setSelectedContent(content);
+      setContentFormData({
+        title: content.title,
+        description: content.description,
+        type: content.type,
+        imageUrl: content.imageUrl || '',
+        documentUrl: content.documentUrl || '',
+        tags: content.tags || []
+      });
+    } else {
+      setSelectedContent(null);
+      resetContentForm();
+    }
+    setShowContentModal(true);
+  };
+
+  const resetContentForm = () => {
+    setContentFormData({
+      title: '',
+      description: '',
+      type: 'tip',
+      imageUrl: '',
+      documentUrl: '',
+      tags: []
+    });
   };
 
   const stats = {
@@ -1019,50 +1133,203 @@ export default function AdminDashboard() {
         );
 
       case 'content':
+        const tips = content.filter(c => c.type === 'tip');
+        const blogs = content.filter(c => c.type === 'blog');
+        const documents = content.filter(c => c.type === 'document');
+
         return (
           <div>
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900">Content Management</h1>
-              <p className="text-gray-600 mt-1">Manage health tips and blog posts</p>
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Content Management</h1>
+                <p className="text-gray-600 mt-1">Manage health tips, blogs, and documents</p>
+              </div>
+              <button
+                onClick={() => openContentModal()}
+                className="flex items-center px-4 py-2 bg-[#0b8fac] text-white rounded-lg hover:bg-[#096f85] font-medium transition"
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Add Content
+              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Health Tips</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">Health Tips</h3>
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">{tips.length}</span>
+                </div>
                 <div className="space-y-3">
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h4 className="font-semibold text-gray-900 mb-1">Brush Twice Daily</h4>
-                    <p className="text-sm text-gray-600">Regular brushing prevents cavities and gum disease</p>
-                  </div>
-                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h4 className="font-semibold text-gray-900 mb-1">Floss Daily</h4>
-                    <p className="text-sm text-gray-600">Flossing removes plaque between teeth</p>
-                  </div>
-                  <button className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#0b8fac] hover:text-[#0b8fac] transition">
-                    + Add New Tip
-                  </button>
+                  {tips.slice(0, 3).map((tip) => (
+                    <div key={tip.id} className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">{tip.title}</h4>
+                          <p className="text-sm text-gray-600 line-clamp-2">{tip.description}</p>
+                        </div>
+                        <div className="flex space-x-2 ml-2">
+                          <button
+                            onClick={() => openContentModal(tip)}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteContent(tip.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {tips.length === 0 && (
+                    <p className="text-gray-400 text-center py-4">No health tips yet</p>
+                  )}
                 </div>
               </div>
 
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-bold text-gray-900 mb-4">Blog Posts</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">Blog Posts</h3>
+                  <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">{blogs.length}</span>
+                </div>
                 <div className="space-y-3">
-                  <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                    <h4 className="font-semibold text-gray-900 mb-1">Top 10 Dental Care Tips</h4>
-                    <p className="text-sm text-gray-600">Published 2 days ago</p>
-                  </div>
-                  <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                    <h4 className="font-semibold text-gray-900 mb-1">Understanding Root Canals</h4>
-                    <p className="text-sm text-gray-600">Published 1 week ago</p>
-                  </div>
-                  <button className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-[#0b8fac] hover:text-[#0b8fac] transition">
-                    + Add New Post
-                  </button>
+                  {blogs.slice(0, 3).map((blog) => (
+                    <div key={blog.id} className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">{blog.title}</h4>
+                          <p className="text-sm text-gray-600 line-clamp-2">{blog.description}</p>
+                        </div>
+                        <div className="flex space-x-2 ml-2">
+                          <button
+                            onClick={() => openContentModal(blog)}
+                            className="text-purple-600 hover:text-purple-800"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteContent(blog.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {blogs.length === 0 && (
+                    <p className="text-gray-400 text-center py-4">No blog posts yet</p>
+                  )}
                 </div>
               </div>
+
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">Documents</h3>
+                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">{documents.length}</span>
+                </div>
+                <div className="space-y-3">
+                  {documents.slice(0, 3).map((doc) => (
+                    <div key={doc.id} className="p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 mb-1">{doc.title}</h4>
+                          <p className="text-sm text-gray-600 line-clamp-2">{doc.description}</p>
+                        </div>
+                        <div className="flex space-x-2 ml-2">
+                          <button
+                            onClick={() => openContentModal(doc)}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteContent(doc.id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {documents.length === 0 && (
+                    <p className="text-gray-400 text-center py-4">No documents yet</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* All Content Table */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200">
+                <h3 className="text-lg font-bold text-gray-900">All Content</h3>
+              </div>
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {content.map((item) => (
+                    <tr key={item.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{item.title}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          item.type === 'tip' ? 'bg-blue-100 text-blue-800' :
+                          item.type === 'blog' ? 'bg-purple-100 text-purple-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-600 line-clamp-2 max-w-md">{item.description}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(item.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
+                        <button
+                          onClick={() => openContentModal(item)}
+                          className="text-[#0b8fac] hover:text-[#096f85] font-medium"
+                        >
+                          <Edit className="w-4 h-4 inline mr-1" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteContent(item.id)}
+                          className="text-red-600 hover:text-red-900 font-medium"
+                        >
+                          <Trash2 className="w-4 h-4 inline mr-1" />
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {content.length === 0 && (
+                <div className="text-center py-12">
+                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 text-lg font-medium">No content available</p>
+                  <p className="text-gray-400 text-sm mt-2">Click "Add Content" to create health tips, blogs, or documents</p>
+                </div>
+              )}
             </div>
           </div>
         );
+
 
       default:
         return null;
@@ -1079,6 +1346,118 @@ export default function AdminDashboard() {
       <div className="p-8">
         {renderContent()}
       </div>
+
+      {/* Content Modal */}
+      {showContentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {selectedContent ? 'Edit Content' : 'Add New Content'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowContentModal(false);
+                    setSelectedContent(null);
+                    resetContentForm();
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                <select
+                  value={contentFormData.type}
+                  onChange={(e) => setContentFormData({...contentFormData, type: e.target.value as any})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                >
+                  <option value="tip">Health Tip</option>
+                  <option value="blog">Blog Post</option>
+                  <option value="document">Document</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                <input
+                  type="text"
+                  value={contentFormData.title}
+                  onChange={(e) => setContentFormData({...contentFormData, title: e.target.value})}
+                  placeholder="Enter title"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                <textarea
+                  value={contentFormData.description}
+                  onChange={(e) => setContentFormData({...contentFormData, description: e.target.value})}
+                  placeholder="Enter description"
+                  rows={4}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Image className="w-4 h-4 inline mr-2" />
+                  Image URL (optional)
+                </label>
+                <input
+                  type="url"
+                  value={contentFormData.imageUrl}
+                  onChange={(e) => setContentFormData({...contentFormData, imageUrl: e.target.value})}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <FileUp className="w-4 h-4 inline mr-2" />
+                  Document URL (optional)
+                </label>
+                <input
+                  type="url"
+                  value={contentFormData.documentUrl}
+                  onChange={(e) => setContentFormData({...contentFormData, documentUrl: e.target.value})}
+                  placeholder="https://example.com/document.pdf"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={selectedContent ? handleUpdateContent : handleAddContent}
+                  disabled={loading}
+                  className="flex-1 px-6 py-3 bg-[#0b8fac] text-white rounded-lg hover:bg-[#096f85] font-medium transition disabled:opacity-50"
+                >
+                  {loading ? 'Saving...' : (selectedContent ? 'Update Content' : 'Create Content')}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowContentModal(false);
+                    setSelectedContent(null);
+                    resetContentForm();
+                  }}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </SidebarLayout>
   );
 }

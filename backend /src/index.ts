@@ -5,6 +5,7 @@ import authRoutes from './routes/auth';
 import appointmentRoutes from './routes/appointments';
 import dentistRoutes from './routes/dentists';
 import treatmentRoutes from './routes/treatments';
+import contentRoutes from './routes/content';
 import { errorHandler, notFound } from './middleware/errorHandler';
 
 dotenv.config();
@@ -47,6 +48,7 @@ app.get('/api', (req: Request, res: Response) => {
       appointments: '/api/appointments',
       dentists: '/api/dentists',
       treatments: '/api/treatments',
+      content: '/api/content',
     }
   });
 });
@@ -58,6 +60,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/dentists', dentistRoutes);
 app.use('/api/treatments', treatmentRoutes);
+app.use('/api/content', contentRoutes);
 
 console.log('API routes registered');
 
