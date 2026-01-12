@@ -18,8 +18,11 @@ async function updateDentistProfile() {
       data: {
         experience: 12,
         phone: '9828592942',
-        firstName: 'Bijay Kumar',
-        lastName: 'Shah Tali'
+        firstName: 'Bijay',
+        lastName: 'Shah Tali',
+        specialization: 'Orthodontics',
+        licenseNumber: '54B23A',
+        bio: 'Dr. Bijay Shah Tali - Expert in General Dentistry with 12 years of experience, dedicated to creating healthy, beautiful smiles.'
       }
     });
 

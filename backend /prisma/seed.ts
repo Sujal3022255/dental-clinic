@@ -38,12 +38,12 @@ async function main() {
     {
       email: 'bijay.shah@dentalclinic.com',
       password: 'dentist123',
-      firstName: 'Bijay Shah',
-      lastName: 'Tali',
+      firstName: 'Bijay',
+      lastName: 'Shah Tali',
       specialization: 'Orthodontics',
-      licenseNumber: 'DDS-2024-101',
-      phone: '+9779841234567',
-      bio: 'Specialist in orthodontics with expertise in braces and teeth alignment',
+      licenseNumber: '54B23A',
+      phone: '9828592942',
+      bio: 'Dr. Bijay Shah Tali - Expert in General Dentistry with 12 years of experience, dedicated to creating healthy, beautiful smiles.',
       experience: 12,
     },
     {
