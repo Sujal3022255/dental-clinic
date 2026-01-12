@@ -19,10 +19,11 @@ import {
   Mail,
   Phone,
   Briefcase,
-  AlertCircle
+  AlertCircle,
+  Clock
 } from 'lucide-react';
 
-type TabType = 'dashboard' | 'users' | 'patients' | 'dentists' | 'appointments' | 'content';
+type TabType = 'dashboard' | 'users' | 'patients' | 'dentists' | 'appointments' | 'timeslots' | 'content';
 
 interface User {
   id: string;
@@ -82,6 +83,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadUsers();
     loadDentists();
+    loadAppointments();
   }, []);
 
   const loadUsers = () => {
@@ -106,6 +108,39 @@ export default function AdminDashboard() {
     } catch (error: any) {
       console.error('Failed to load appointments:', error);
       setError(error.response?.data?.error || 'Failed to load appointments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveAppointment = async (appointmentId: string) => {
+    if (!confirm('Approve this appointment?')) return;
+    
+    try {
+      setLoading(true);
+      await appointmentService.approve(appointmentId);
+      await loadAppointments();
+      alert('Appointment approved successfully!');
+    } catch (error: any) {
+      console.error('Failed to approve appointment:', error);
+      alert(error.response?.data?.error || 'Failed to approve appointment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeclineAppointment = async (appointmentId: string) => {
+    const reason = prompt('Enter reason for declining (optional):');
+    if (reason === null) return; // User cancelled
+    
+    try {
+      setLoading(true);
+      await appointmentService.reject(appointmentId, reason || undefined);
+      await loadAppointments();
+      alert('Appointment declined');
+    } catch (error: any) {
+      console.error('Failed to decline appointment:', error);
+      alert(error.response?.data?.error || 'Failed to decline appointment');
     } finally {
       setLoading(false);
     }
@@ -251,6 +286,12 @@ export default function AdminDashboard() {
       label: 'Appointments',
       active: activeTab === 'appointments',
       onClick: () => setActiveTab('appointments')
+    },
+    {
+      icon: <Clock className="w-5 h-5" />,
+      label: 'Time Slots',
+      active: activeTab === 'timeslots',
+      onClick: () => setActiveTab('timeslots')
     },
     {
       icon: <Users className="w-5 h-5" />,
@@ -854,6 +895,7 @@ export default function AdminDashboard() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -883,12 +925,96 @@ export default function AdminDashboard() {
                             {apt.status}
                           </span>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                          {apt.status === 'PENDING' && (
+                            <>
+                              <button
+                                onClick={() => handleApproveAppointment(apt.id)}
+                                className="inline-flex items-center px-3 py-1 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium"
+                                disabled={loading}
+                              >
+                                ✓ Approve
+                              </button>
+                              <button
+                                onClick={() => handleDeclineAppointment(apt.id)}
+                                className="inline-flex items-center px-3 py-1 bg-red-600 text-white rounded-md hover:bg-red-700 font-medium"
+                                disabled={loading}
+                              >
+                                ✗ Decline
+                              </button>
+                            </>
+                          )}
+                          {apt.status !== 'PENDING' && (
+                            <span className="text-gray-400 italic">No actions</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
+          </div>
+        );
+
+      case 'timeslots':
+        return (
+          <div>
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-gray-900">Time Slot Management</h1>
+              <p className="text-gray-600 mt-1">Manage dentist availability and schedules</p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {dentists.map((dentist) => (
+                <div key={dentist.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div className="flex items-center mb-4 pb-4 border-b">
+                    <div className="w-12 h-12 bg-[#0b8fac] rounded-full flex items-center justify-center text-white text-lg font-bold">
+                      {dentist.firstName?.charAt(0)}
+                    </div>
+                    <div className="ml-4">
+                      <h3 className="text-lg font-bold text-gray-900">
+                        Dr. {dentist.firstName} {dentist.lastName}
+                      </h3>
+                      <p className="text-sm text-gray-600">{dentist.specialization}</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-gray-700 text-sm uppercase tracking-wide">Weekly Schedule</h4>
+                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                      <div key={day} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="flex items-center space-x-3">
+                          <Clock className="w-4 h-4 text-gray-400" />
+                          <span className="font-medium text-gray-700">{day}</span>
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].includes(day) ? (
+                            <span className="text-green-600 font-medium">9:00 AM - 5:00 PM</span>
+                          ) : (
+                            <span className="text-gray-400">Closed</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t">
+                    <button className="w-full py-2 px-4 bg-[#0b8fac] text-white rounded-lg hover:bg-[#096f85] font-medium transition">
+                      Edit Schedule
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {dentists.length === 0 && (
+              <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
+                <Clock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg font-medium">No dentists available</p>
+                <p className="text-gray-400 text-sm mt-2">Add dentists to manage their schedules</p>
+              </div>
+            )}
           </div>
         );
 
