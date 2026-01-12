@@ -1,0 +1,143 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User model for authentication
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  patient   Patient?
+  dentist   Dentist?
+  
+  @@map("users")
+}
+
+enum Role {
+  USER
+  PATIENT
+  DENTIST
+  ADMIN
+}
+
+// Patient model
+model Patient {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  firstName   String
+  lastName    String
+  phone       String?
+  dateOfBirth DateTime?
+  address     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  treatments   Treatment[]
+  
+  @@map("patients")
+}
+
+// Dentist model
+model Dentist {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  firstName      String
+  lastName       String
+  specialization String?
+  licenseNumber  String   @unique
+  phone          String?
+  bio            String?
+  experience     Int?     // years of experience
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  availability Availability[]
+  
+  @@map("dentists")
+}
+
+// Appointment model
+model Appointment {
+  id          String            @id @default(uuid())
+  patientId   String
+  dentistId   String
+  dateTime    DateTime
+  duration    Int               @default(30) // duration in minutes
+  status      AppointmentStatus @default(SCHEDULED)
+  reason      String?
+  notes       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  patient   Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  dentist   Dentist     @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+  treatment Treatment?
+  
+  @@map("appointments")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+// Treatment model
+model Treatment {
+  id            String   @id @default(uuid())
+  appointmentId String   @unique
+  patientId     String
+  diagnosis     String
+  procedure     String
+  prescription  String?
+  cost          Float?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  patient     Patient     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  @@map("treatments")
+}
+
+// Dentist availability model
+model Availability {
+  id        String   @id @default(uuid())
+  dentistId String
+  dayOfWeek Int      // 0 = Sunday, 6 = Saturday
+  startTime String   // Format: "HH:MM"
+  endTime   String   // Format: "HH:MM"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  dentist Dentist @relation(fields: [dentistId], references: [id], onDelete: Cascade)
+  
+  @@map("availability")
+}
