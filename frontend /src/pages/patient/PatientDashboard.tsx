@@ -448,14 +448,23 @@ export default function PatientDashboard() {
                         value={bookingData.dentistId}
                         onChange={(e) => setBookingData({ ...bookingData, dentistId: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                        disabled={dentists.length === 0}
                       >
-                        <option value="">Choose a dentist</option>
+                        <option value="">
+                          {dentists.length === 0 ? 'No dentists available' : 'Choose a dentist'}
+                        </option>
                         {dentists.map((d) => (
                           <option key={d.id} value={d.id}>
-                            Dr. {d.firstName} {d.lastName} {d.specialization && `- ${d.specialization}`}
+                            Dr. {d.firstName} {d.lastName}
+                            {d.specialization && ` - ${d.specialization}`}
                           </option>
                         ))}
                       </select>
+                      {dentists.length === 0 && (
+                        <p className="mt-1 text-xs text-red-600">
+                          No dentists are currently registered. Please contact the administrator.
+                        </p>
+                      )}
                     </div>
 
                     <div>
