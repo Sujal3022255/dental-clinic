@@ -45,6 +45,8 @@ export default function PatientDashboard() {
   const [treatments, setTreatments] = useState<any[]>([]);
   const [dentists, setDentists] = useState<any[]>([]);
   const [showBooking, setShowBooking] = useState(false);
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   
   const [profileData, setProfileData] = useState({
@@ -143,12 +145,55 @@ export default function PatientDashboard() {
 
     try {
       setLoading(true);
-      await appointmentService.updateStatus(id, 'CANCELLED');
+      await appointmentService.cancel(id);
       await loadData();
       alert('Appointment cancelled successfully');
     } catch (error: any) {
       console.error('Failed to cancel appointment:', error);
       alert(error.response?.data?.error || 'Failed to cancel appointment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openRescheduleModal = (apt: any) => {
+    setSelectedAppointment(apt);
+    const dateTime = new Date(apt.dateTime);
+    setBookingData({
+      dentistId: apt.dentistId,
+      date: dateTime.toISOString().split('T')[0],
+      time: dateTime.toTimeString().slice(0, 5),
+      reason: apt.reason || ''
+    });
+    setShowReschedule(true);
+  };
+
+  const handleReschedule = async () => {
+    if (!selectedAppointment || !bookingData.date || !bookingData.time) {
+      alert('Please fill all fields');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+
+      const dateTime = new Date(`${bookingData.date}T${bookingData.time}`);
+
+      await appointmentService.reschedule(selectedAppointment.id, {
+        dateTime: dateTime.toISOString(),
+        reason: bookingData.reason,
+      });
+
+      setShowReschedule(false);
+      setSelectedAppointment(null);
+      setBookingData({ dentistId: '', date: '', time: '', reason: '' });
+      
+      await loadData();
+      alert('Appointment rescheduled successfully! Waiting for dentist approval.');
+    } catch (error: any) {
+      console.error('Failed to reschedule appointment:', error);
+      alert(error.response?.data?.error || 'Failed to reschedule appointment');
     } finally {
       setLoading(false);
     }
@@ -291,6 +336,7 @@ export default function PatientDashboard() {
                         <p className="text-sm text-gray-600">Dr. {getDentistName(apt)} • {date} at {time}</p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        apt.status === 'PENDING' ? 'bg-orange-100 text-orange-800' :
                         apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
                         apt.status === 'SCHEDULED' ? 'bg-yellow-100 text-yellow-800' :
                         apt.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
@@ -344,6 +390,7 @@ export default function PatientDashboard() {
                         <td className="px-6 py-4 text-sm text-gray-900">{apt.reason || 'General Checkup'}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            apt.status === 'PENDING' ? 'bg-orange-100 text-orange-800' :
                             apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
                             apt.status === 'SCHEDULED' ? 'bg-yellow-100 text-yellow-800' :
                             apt.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
@@ -353,15 +400,29 @@ export default function PatientDashboard() {
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          {apt.status === 'SCHEDULED' && (
-                            <button
-                              onClick={() => cancelAppointment(apt.id)}
-                              className="text-red-600 hover:text-red-900"
-                              disabled={loading}
-                            >
-                              Cancel
-                            </button>
-                          )}
+                          <div className="flex space-x-3">
+                            {(apt.status === 'PENDING' || apt.status === 'SCHEDULED') && (
+                              <>
+                                <button
+                                  onClick={() => openRescheduleModal(apt)}
+                                  className="text-blue-600 hover:text-blue-900 font-medium"
+                                  disabled={loading}
+                                >
+                                  Reschedule
+                                </button>
+                                <button
+                                  onClick={() => cancelAppointment(apt.id)}
+                                  className="text-red-600 hover:text-red-900 font-medium"
+                                  disabled={loading}
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            )}
+                            {apt.status === 'PENDING' && (
+                              <span className="text-xs text-orange-600">(Pending Approval)</span>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -434,6 +495,73 @@ export default function PatientDashboard() {
                       className="w-full bg-[#0b8fac] text-white py-3 rounded-lg hover:bg-[#096f85] transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? 'Booking...' : 'Book Appointment'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {showReschedule && selectedAppointment && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold">Reschedule Appointment</h2>
+                    <button onClick={() => { setShowReschedule(false); setSelectedAppointment(null); }}>
+                      <X className="w-6 h-6 text-gray-500" />
+                    </button>
+                  </div>
+
+                  <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      Current: {formatDateTime(selectedAppointment.dateTime).date} at {formatDateTime(selectedAppointment.dateTime).time}
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">New Date</label>
+                      <input
+                        type="date"
+                        value={bookingData.date}
+                        onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">New Time</label>
+                      <input
+                        type="time"
+                        value={bookingData.time}
+                        onChange={(e) => setBookingData({ ...bookingData, time: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Reason (Optional)</label>
+                      <textarea
+                        value={bookingData.reason}
+                        onChange={(e) => setBookingData({ ...bookingData, reason: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                        rows={3}
+                        placeholder="Update reason for visit..."
+                      />
+                    </div>
+
+                    <div className="bg-yellow-50 p-3 rounded-lg">
+                      <p className="text-xs text-yellow-800">
+                        ⚠️ After rescheduling, the appointment will be set to PENDING status and requires dentist approval.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={handleReschedule}
+                      disabled={loading}
+                      className="w-full bg-[#0b8fac] text-white py-3 rounded-lg hover:bg-[#096f85] transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loading ? 'Rescheduling...' : 'Reschedule Appointment'}
                     </button>
                   </div>
                 </div>

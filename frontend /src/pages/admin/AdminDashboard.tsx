@@ -323,6 +323,7 @@ export default function AdminDashboard() {
                         </p>
                       </div>
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        apt.status === 'PENDING' ? 'bg-orange-100 text-orange-800' :
                         apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
                         apt.status === 'SCHEDULED' ? 'bg-yellow-100 text-yellow-800' :
                         apt.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
@@ -601,6 +602,7 @@ export default function AdminDashboard() {
                         <td className="px-6 py-4 text-sm text-gray-900">{apt.reason || 'General checkup'}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            apt.status === 'PENDING' ? 'bg-orange-100 text-orange-800' :
                             apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
                             apt.status === 'SCHEDULED' ? 'bg-yellow-100 text-yellow-800' :
                             apt.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :

@@ -4,7 +4,7 @@ export interface Appointment {
   id: string;
   dateTime: string;
   duration: number;
-  status: 'SCHEDULED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  status: 'PENDING' | 'SCHEDULED' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
   reason?: string;
   notes?: string;
   dentist?: any;
@@ -15,6 +15,11 @@ export interface CreateAppointmentData {
   dentistId: string;
   dateTime: string;
   duration?: number;
+  reason?: string;
+}
+
+export interface RescheduleAppointmentData {
+  dateTime: string;
   reason?: string;
 }
 
@@ -37,9 +42,34 @@ export const appointmentService = {
     return response.data;
   },
 
+  // Reschedule appointment
+  reschedule: async (id: string, data: RescheduleAppointmentData): Promise<{ message: string; appointment: Appointment }> => {
+    const response = await apiClient.patch(`/appointments/${id}/reschedule`, data);
+    return response.data;
+  },
+
+  // Approve appointment (dentist/admin only)
+  approve: async (id: string): Promise<{ message: string; appointment: Appointment }> => {
+    const response = await apiClient.patch(`/appointments/${id}/approve`);
+    return response.data;
+  },
+
+  // Reject appointment (dentist/admin only)
+  reject: async (id: string, reason?: string): Promise<{ message: string; appointment: Appointment }> => {
+    const response = await apiClient.patch(`/appointments/${id}/reject`, { reason });
+    return response.data;
+  },
+
+  // Cancel appointment (set status to CANCELLED)
+  cancel: async (id: string): Promise<{ message: string; appointment: Appointment }> => {
+    const response = await apiClient.patch(`/appointments/${id}/status`, { status: 'CANCELLED' });
+    return response.data;
+  },
+
   // Delete appointment
   delete: async (id: string): Promise<{ message: string }> => {
     const response = await apiClient.delete(`/appointments/${id}`);
     return response.data;
   },
 };
+

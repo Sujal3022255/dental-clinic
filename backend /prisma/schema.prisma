@@ -99,11 +99,12 @@ model Appointment {
 }
 
 enum AppointmentStatus {
-  SCHEDULED
-  CONFIRMED
-  COMPLETED
-  CANCELLED
-  NO_SHOW
+  PENDING     // Waiting for dentist approval
+  SCHEDULED   // Approved by dentist
+  CONFIRMED   // Confirmed by patient
+  COMPLETED   // Treatment completed
+  CANCELLED   // Cancelled by patient or dentist
+  NO_SHOW     // Patient didn't show up
 }
 
 // Treatment model

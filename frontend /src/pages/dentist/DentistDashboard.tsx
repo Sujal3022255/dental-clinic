@@ -134,8 +134,40 @@ export default function DentistDashboard() {
     }
   };
 
+  const handleApprove = async (appointmentId: string) => {
+    try {
+      setLoading(true);
+      await appointmentService.approve(appointmentId);
+      await loadAppointments();
+      alert('Appointment approved successfully');
+    } catch (error: any) {
+      console.error('Failed to approve appointment:', error);
+      alert(error.response?.data?.error || 'Failed to approve appointment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReject = async (appointmentId: string) => {
+    const reason = prompt('Reason for rejecting (optional):');
+    if (reason === null) return; // User cancelled
+
+    try {
+      setLoading(true);
+      await appointmentService.reject(appointmentId, reason || undefined);
+      await loadAppointments();
+      alert('Appointment rejected');
+    } catch (error: any) {
+      console.error('Failed to reject appointment:', error);
+      alert(error.response?.data?.error || 'Failed to reject appointment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const stats = {
-    pending: appointments.filter(a => a.status === 'SCHEDULED').length,
+    pending: appointments.filter(a => a.status === 'PENDING').length,
+    scheduled: appointments.filter(a => a.status === 'SCHEDULED').length,
     confirmed: appointments.filter(a => a.status === 'CONFIRMED').length,
     completed: appointments.filter(a => a.status === 'COMPLETED').length,
     today: appointments.filter(a => {
@@ -249,8 +281,7 @@ export default function DentistDashboard() {
                             <p className="text-sm text-gray-600">{time} • {apt.reason || 'General checkup'}</p>
                           </div>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                          apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${                          apt.status === 'PENDING' ? 'bg-orange-100 text-orange-800' :                          apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
                           apt.status === 'SCHEDULED' ? 'bg-yellow-100 text-yellow-800' :
                           apt.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
                           'bg-red-100 text-red-800'
@@ -311,6 +342,7 @@ export default function DentistDashboard() {
                         <td className="px-6 py-4 text-sm text-gray-900">{apt.reason || 'General checkup'}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            apt.status === 'PENDING' ? 'bg-orange-100 text-orange-800' :
                             apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
                             apt.status === 'SCHEDULED' ? 'bg-yellow-100 text-yellow-800' :
                             apt.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
@@ -319,36 +351,56 @@ export default function DentistDashboard() {
                             {apt.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm space-x-2">
-                          {apt.status === 'SCHEDULED' && (
-                            <>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                          <div className="flex space-x-2">
+                            {apt.status === 'PENDING' && (
+                              <>
+                                <button
+                                  onClick={() => handleApprove(apt.id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded font-medium"
+                                  disabled={loading}
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleReject(apt.id)}
+                                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded font-medium"
+                                  disabled={loading}
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            {apt.status === 'SCHEDULED' && (
+                              <>
+                                <button
+                                  onClick={() => updateAppointmentStatus(apt.id, 'CONFIRMED')}
+                                  className="text-green-600 hover:text-green-900 font-medium"
+                                  disabled={loading}
+                                >
+                                  Confirm
+                                </button>
+                                <button
+                                  onClick={() => updateAppointmentStatus(apt.id, 'CANCELLED')}
+                                  className="text-red-600 hover:text-red-900 font-medium"
+                                  disabled={loading}
+                                >
+                                  Cancel
+                                </button>
+                              </>
+                            )}
+                            {apt.status === 'CONFIRMED' && (
                               <button
-                                onClick={() => updateAppointmentStatus(apt.id, 'CONFIRMED')}
-                                className="text-green-600 hover:text-green-900 font-medium"
-                                disabled={loading}
+                                onClick={() => {
+                                  setSelectedAppointment(apt);
+                                  setShowNotesModal(true);
+                                }}
+                                className="text-[#0b8fac] hover:text-[#096f85] font-medium"
                               >
-                                Confirm
+                                Add Notes
                               </button>
-                              <button
-                                onClick={() => updateAppointmentStatus(apt.id, 'CANCELLED')}
-                                className="text-red-600 hover:text-red-900 font-medium"
-                                disabled={loading}
-                              >
-                                Cancel
-                              </button>
-                            </>
-                          )}
-                          {apt.status === 'CONFIRMED' && (
-                            <button
-                              onClick={() => {
-                                setSelectedAppointment(apt);
-                                setShowNotesModal(true);
-                              }}
-                              className="text-[#0b8fac] hover:text-[#096f85] font-medium"
-                            >
-                              Add Notes
-                            </button>
-                          )}
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
