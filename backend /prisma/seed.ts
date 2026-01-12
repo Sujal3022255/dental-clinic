@@ -47,10 +47,10 @@ async function main() {
       experience: 12,
     },
     {
-      email: 'aayush.mahata@dentalclinic.com',
+      email: 'aayush.mehta@dentalclinic.com',
       password: 'dentist123',
       firstName: 'Aayush',
-      lastName: 'Mahata',
+      lastName: 'Mehta',
       specialization: 'Endodontics',
       licenseNumber: 'DDS-2024-102',
       phone: '+9779841234568',

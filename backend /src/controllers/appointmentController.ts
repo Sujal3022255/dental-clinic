@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import prisma from '../utils/prisma';
+import { sendAppointmentConfirmation, sendAppointmentStatusUpdate } from '../services/emailService';
 
 export const createAppointment = async (req: AuthRequest, res: Response) => {
   try {
@@ -51,6 +52,11 @@ export const createAppointment = async (req: AuthRequest, res: Response) => {
         },
       },
     });
+
+    // Send confirmation email (async, don't wait)
+    sendAppointmentConfirmation(appointment as any).catch(err => 
+      console.error('Email send failed:', err)
+    );
 
     res.status(201).json({
       message: 'Appointment created successfully',

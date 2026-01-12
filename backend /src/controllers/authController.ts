@@ -81,9 +81,18 @@ export const register = async (req: Request, res: Response) => {
       });
     }
 
+    // Generate access token (expires in 24 hours)
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      JWT_SECRET
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Generate refresh token (expires in 7 days)
+    const refreshToken = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
     );
 
     const { password: _, ...userWithoutPassword } = user;
@@ -91,6 +100,7 @@ export const register = async (req: Request, res: Response) => {
     res.status(201).json({
       message: 'User registered successfully',
       token,
+      refreshToken,
       user: userWithoutPassword,
     });
   } catch (error) {
@@ -128,9 +138,18 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Generate access token (expires in 24 hours)
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      JWT_SECRET
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Generate refresh token (expires in 7 days)
+    const refreshToken = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
     );
 
     const { password: _, ...userWithoutPassword } = user;
@@ -138,6 +157,7 @@ export const login = async (req: Request, res: Response) => {
     res.json({
       message: 'Login successful',
       token,
+      refreshToken,
       user: userWithoutPassword,
     });
   } catch (error) {
@@ -173,5 +193,44 @@ export const getCurrentUser = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Get current user error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+};
+
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'Refresh token required' });
+    }
+
+    // Verify refresh token
+    const decoded = jwt.verify(refreshToken, JWT_SECRET) as {
+      id: string;
+      email: string;
+      role: string;
+    };
+
+    // Generate new access token
+    const newToken = jwt.sign(
+      { id: decoded.id, email: decoded.email, role: decoded.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Generate new refresh token
+    const newRefreshToken = jwt.sign(
+      { id: decoded.id, email: decoded.email, role: decoded.role },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token: newToken,
+      refreshToken: newRefreshToken,
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(403).json({ error: 'Invalid or expired refresh token' });
   }
 };

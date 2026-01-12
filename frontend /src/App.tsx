@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import PatientDashboard from './pages/patient/PatientDashboard';
 import DentistDashboard from './pages/dentist/DentistDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminProfile from './pages/admin/AdminProfile';
 import UserDashboard from './pages/user/UserDashboard';
 
 function ProtectedRoute({ children, role }: { children: React.ReactNode; role?: string }) {
@@ -72,6 +73,7 @@ function App() {
       
       <Route path="/patient/dashboard" element={<ProtectedRoute role="PATIENT"><PatientDashboard /></ProtectedRoute>} />
       <Route path="/dentist/dashboard" element={<ProtectedRoute role="DENTIST"><DentistDashboard /></ProtectedRoute>} />
+      <Route path="/admin/profile" element={<ProtectedRoute role="ADMIN"><AdminProfile /></ProtectedRoute>} />
       <Route path="/admin/dashboard" element={<ProtectedRoute role="ADMIN"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/user/dashboard" element={<ProtectedRoute role="USER"><UserDashboard /></ProtectedRoute>} />
       

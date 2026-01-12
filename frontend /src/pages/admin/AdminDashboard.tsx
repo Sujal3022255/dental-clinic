@@ -291,10 +291,11 @@ export default function AdminDashboard() {
       await loadContent();
       setShowContentModal(false);
       resetContentForm();
-      alert('Content created successfully!');
+      alert('✅ Content created successfully!');
     } catch (error: any) {
       console.error('Failed to create content:', error);
-      alert(error.response?.data?.error || 'Failed to create content');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to create content';
+      alert('❌ ' + errorMessage + '\n\nMake sure the backend server is running on port 3000');
     } finally {
       setLoading(false);
     }
@@ -418,6 +419,12 @@ export default function AdminDashboard() {
       label: 'Content',
       active: activeTab === 'content',
       onClick: () => setActiveTab('content')
+    },
+    {
+      icon: <Edit className="w-5 h-5" />,
+      label: 'Profile',
+      active: false,
+      onClick: () => window.location.href = '/admin/profile'
     }
   ];
 

@@ -1,21 +1,52 @@
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
 import appointmentRoutes from './routes/appointments';
 import dentistRoutes from './routes/dentists';
 import treatmentRoutes from './routes/treatments';
 import contentRoutes from './routes/content';
 import { errorHandler, notFound } from './middleware/errorHandler';
+import { verifyEmailConfig } from './services/emailService';
 
 dotenv.config();
 
 console.log('Starting server initialization...');
 
+// Verify email configuration on startup
+verifyEmailConfig();
+
 const app: Express = express();
 const PORT = process.env.PORT || 3000;
 
 console.log('Configuring middleware...');
+
+// Security Headers
+app.use(helmet());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to all routes
+app.use(limiter);
+
+// Stricter rate limiting for auth routes
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit each IP to 5 login attempts per windowMs
+  message: 'Too many login attempts, please try again after 15 minutes.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 // Middleware
 app.use(cors({
@@ -45,6 +76,7 @@ app.get('/api', (req: Request, res: Response) => {
     version: '1.0.0',
     endpoints: {
       auth: '/api/auth',
+      users: '/api/users',
       appointments: '/api/appointments',
       dentists: '/api/dentists',
       treatments: '/api/treatments',
@@ -56,7 +88,8 @@ app.get('/api', (req: Request, res: Response) => {
 console.log('Registering API routes...');
 
 // API Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/dentists', dentistRoutes);
 app.use('/api/treatments', treatmentRoutes);
