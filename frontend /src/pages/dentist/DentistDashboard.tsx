@@ -16,7 +16,7 @@ import {
   X
 } from 'lucide-react';
 
-type TabType = 'dashboard' | 'appointments' | 'schedule' | 'patients';
+type TabType = 'dashboard' | 'appointments' | 'schedule' | 'patients' | 'profile';
 
 interface Availability {
   day: string;
@@ -49,6 +49,7 @@ export default function DentistDashboard() {
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [dentistProfile, setDentistProfile] = useState<any>(null);
   
   // Schedule state
   const [availability, setAvailability] = useState<Availability[]>([
@@ -64,6 +65,7 @@ export default function DentistDashboard() {
   useEffect(() => {
     loadAppointments();
     loadAvailability();
+    loadDentistProfile();
   }, []);
 
   const loadAppointments = async () => {
@@ -87,6 +89,23 @@ export default function DentistDashboard() {
     const saved = localStorage.getItem(`dentist_schedule_${user?.id}`);
     if (saved) {
       setAvailability(JSON.parse(saved));
+    }
+  };
+
+  const loadDentistProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:3000/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDentistProfile(data.dentist);
+      }
+    } catch (error) {
+      console.error('Failed to load dentist profile:', error);
     }
   };
 
@@ -201,6 +220,12 @@ export default function DentistDashboard() {
       label: 'Patients',
       active: activeTab === 'patients',
       onClick: () => setActiveTab('patients')
+    },
+    {
+      icon: <Settings className="w-5 h-5" />,
+      label: 'Profile',
+      active: activeTab === 'profile',
+      onClick: () => setActiveTab('profile')
     }
   ];
 
@@ -571,6 +596,103 @@ export default function DentistDashboard() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+        );
+
+      case 'profile':
+        return (
+          <div>
+            <div className="mb-6">
+              <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
+              <p className="text-gray-600 mt-1">Manage your professional information</p>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 max-w-3xl">
+              <div className="flex items-center mb-8 pb-6 border-b">
+                <div className="w-24 h-24 bg-[#0b8fac] rounded-full flex items-center justify-center text-white text-4xl font-bold">
+                  {dentistProfile?.firstName?.charAt(0) || 'D'}
+                </div>
+                <div className="ml-6">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Dr. {dentistProfile?.firstName} {dentistProfile?.lastName}
+                  </h2>
+                  <p className="text-gray-600 mt-1">{dentistProfile?.specialization || 'General Dentistry'}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <div className="bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
+                    <p className="text-gray-900">{user?.email}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Contact Number</label>
+                  <div className="bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
+                    <p className="text-gray-900">{dentistProfile?.phone || 'Not set'}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Specialization</label>
+                  <div className="bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
+                    <p className="text-gray-900">{dentistProfile?.specialization || 'General Dentistry'}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Experience</label>
+                  <div className="bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
+                    <p className="text-gray-900">{dentistProfile?.experience ? `${dentistProfile.experience} years` : 'Not set'}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">License Number</label>
+                  <div className="bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
+                    <p className="text-gray-900">{dentistProfile?.licenseNumber || 'Not set'}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Member Since</label>
+                  <div className="bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
+                    <p className="text-gray-900">
+                      {dentistProfile?.createdAt ? new Date(dentistProfile.createdAt).toLocaleDateString() : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                  <div className="bg-gray-50 px-4 py-3 rounded-lg border border-gray-200">
+                    <p className="text-gray-900">{dentistProfile?.bio || 'No bio available'}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Professional Statistics</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg">
+                    <p className="text-sm text-blue-600 font-medium">Total Appointments</p>
+                    <p className="text-2xl font-bold text-blue-900 mt-1">{appointments.length}</p>
+                  </div>
+                  <div className="bg-green-50 p-4 rounded-lg">
+                    <p className="text-sm text-green-600 font-medium">Completed</p>
+                    <p className="text-2xl font-bold text-green-900 mt-1">{stats.completed}</p>
+                  </div>
+                  <div className="bg-purple-50 p-4 rounded-lg">
+                    <p className="text-sm text-purple-600 font-medium">Unique Patients</p>
+                    <p className="text-2xl font-bold text-purple-900 mt-1">
+                      {new Set(appointments.map(a => a.patientId)).size}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         );

@@ -4,6 +4,7 @@ import SidebarLayout from '../../components/SidebarLayout';
 import { appointmentService } from '../../services/appointmentService';
 import { treatmentService } from '../../services/treatmentService';
 import { userService } from '../../services/userService';
+import { dentistService } from '../../services/dentistService';
 import {
   LayoutDashboard,
   Users,
@@ -59,6 +60,7 @@ export default function AdminDashboard() {
   const { user, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [users, setUsers] = useState<User[]>([]);
+  const [dentists, setDentists] = useState<any[]>([]);
   const [appointments, setAppointments] = useState<any[]>([]);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showEditUserModal, setShowEditUserModal] = useState(false);
@@ -72,17 +74,28 @@ export default function AdminDashboard() {
     full_name: '',
     phone: '',
     role: 'patient' as 'patient' | 'dentist' | 'admin',
-    password: ''
+    password: '',
+    specialization: '',
+    licenseNumber: ''
   });
 
   useEffect(() => {
     loadUsers();
-    loadAppointments();
+    loadDentists();
   }, []);
 
   const loadUsers = () => {
     const allUsers = JSON.parse(localStorage.getItem('dental_clinic_users') || '[]');
     setUsers(allUsers);
+  };
+
+  const loadDentists = async () => {
+    try {
+      const data = await dentistService.getAll();
+      setDentists(data.dentists || []);
+    } catch (error: any) {
+      console.error('Failed to load dentists:', error);
+    }
   };
 
   const loadAppointments = async () => {
@@ -109,6 +122,13 @@ export default function AdminDashboard() {
       const [firstName, ...lastNameParts] = formData.full_name.split(' ');
       const lastName = lastNameParts.join(' ') || firstName;
 
+      // Validate dentist-specific fields
+      if (formData.role === 'dentist' && !formData.licenseNumber) {
+        alert('License number is required for dentists');
+        setLoading(false);
+        return;
+      }
+
       await userService.create({
         email: formData.email,
         password: formData.password,
@@ -116,6 +136,10 @@ export default function AdminDashboard() {
         firstName,
         lastName,
         phone: formData.phone,
+        ...(formData.role === 'dentist' && {
+          specialization: formData.specialization,
+          licenseNumber: formData.licenseNumber
+        })
       });
 
       // Still using localStorage for user list since we don't have a user list endpoint yet
@@ -131,6 +155,12 @@ export default function AdminDashboard() {
       const allUsers = [...users, newUser];
       localStorage.setItem('dental_clinic_users', JSON.stringify(allUsers));
       setUsers(allUsers);
+      
+      // Reload data
+      if (formData.role === 'dentist') {
+        await loadDentists();
+      }
+      
       setShowAddUserModal(false);
       resetForm();
       alert('User created successfully!');
@@ -169,7 +199,9 @@ export default function AdminDashboard() {
       full_name: '',
       phone: '',
       role: 'patient',
-      password: ''
+      password: '',
+      specialization: '',
+      licenseNumber: ''
     });
   };
 
@@ -188,7 +220,7 @@ export default function AdminDashboard() {
   const stats = {
     totalUsers: users.length,
     patients: users.filter(u => u.role === 'patient').length,
-    dentists: users.filter(u => u.role === 'dentist').length,
+    dentists: dentists.length, // Use real dentist count from database
     totalAppointments: appointments.length,
     pendingAppointments: appointments.filter(a => a.status === 'SCHEDULED').length,
     confirmedAppointments: appointments.filter(a => a.status === 'CONFIRMED').length,
@@ -489,6 +521,37 @@ export default function AdminDashboard() {
                       </select>
                     </div>
 
+                    {/* Dentist-specific fields */}
+                    {formData.role === 'dentist' && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Specialization <span className="text-gray-500">(optional)</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.specialization}
+                            onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                            placeholder="e.g., Orthodontics, Endodontics"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            License Number <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.licenseNumber}
+                            onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
+                            placeholder="e.g., DDS-2024-105"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                            required
+                          />
+                        </div>
+                      </>
+                    )}
+
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
                       <input
@@ -702,57 +765,67 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.filter(u => u.role === 'dentist').map((dentist) => (
-                    <tr key={dentist.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
-                            Dr.
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">Dr. {dentist.full_name}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-900">
-                          <Mail className="w-4 h-4 mr-2 text-gray-400" />
-                          {dentist.email}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-900">
-                          <Phone className="w-4 h-4 mr-2 text-gray-400" />
-                          {dentist.phone || 'N/A'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center text-sm text-gray-900">
-                          <Briefcase className="w-4 h-4 mr-2 text-gray-400" />
-                          General Dentistry
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(dentist.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
-                        <button
-                          onClick={() => openEditModal(dentist)}
-                          className="text-[#0b8fac] hover:text-[#096f85] font-medium"
-                        >
-                          <Edit className="w-4 h-4 inline mr-1" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(dentist.id)}
-                          className="text-red-600 hover:text-red-900 font-medium"
-                        >
-                          <Trash2 className="w-4 h-4 inline mr-1" />
-                          Delete
-                        </button>
+                  {dentists.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        No dentists registered yet
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    dentists.map((dentist) => (
+                      <tr key={dentist.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
+                              {(dentist.firstName || 'D').charAt(0)}
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                Dr. {dentist.firstName} {dentist.lastName}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center text-sm text-gray-900">
+                            <Mail className="w-4 h-4 mr-2 text-gray-400" />
+                            {dentist.user?.email || 'N/A'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center text-sm text-gray-900">
+                            <Phone className="w-4 h-4 mr-2 text-gray-400" />
+                            {dentist.user?.phone || 'N/A'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center text-sm text-gray-900">
+                            <Briefcase className="w-4 h-4 mr-2 text-gray-400" />
+                            {dentist.specialization || 'General Dentistry'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(dentist.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
+                          <button
+                            onClick={() => openEditModal({ ...dentist, role: 'dentist' })}
+                            className="text-[#0b8fac] hover:text-[#096f85] font-medium"
+                          >
+                            <Edit className="w-4 h-4 inline mr-1" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(dentist.userId)}
+                            className="text-red-600 hover:text-red-900 font-medium"
+                          >
+                            <Trash2 className="w-4 h-4 inline mr-1" />
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
               {users.filter(u => u.role === 'dentist').length === 0 && (
