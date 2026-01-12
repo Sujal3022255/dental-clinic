@@ -329,7 +329,10 @@ export default function PatientDashboard() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>{
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {appointments.map((apt) => {
                     const { date, time } = formatDateTime(apt.dateTime);
                     return (
                       <tr key={apt.id}>
@@ -362,10 +365,7 @@ export default function PatientDashboard() {
                         </td>
                       </tr>
                     );
-                  }     )}
-                      </td>
-                    </tr>
-                  ))}
+                  })}
                 </tbody>
               </table>
             </div>
@@ -430,17 +430,17 @@ export default function PatientDashboard() {
 
                     <button
                       onClick={handleBookAppointment}
-                      className="w-full bg-[#0b8fac] text-white py-3 rounded-lg hover:bg-[#096f85] transition font-semibold"
+                      disabled={loading}
+                      className="w-full bg-[#0b8fac] text-white py-3 rounded-lg hover:bg-[#096f85] transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Book Appointment
+                      {loading ? 'Booking...' : 'Book Appointment'}
                     </button>
                   </div>
                 </div>
               </div>
-            )}disabled={loading}
-                      className="w-full bg-[#0b8fac] text-white py-3 rounded-lg hover:bg-[#096f85] transition font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {loading ? 'Booking...' : 'Book Appointment'}
+            )}
+          </div>
+        );
 
       case 'history':
         return (

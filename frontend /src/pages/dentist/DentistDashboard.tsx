@@ -256,10 +256,15 @@ export default function DentistDashboard() {
                           'bg-red-100 text-red-800'
                         }`}>
                         {apt.status.toUpperCase()}
-                      </span>
-                    </div>
-                  ))}
-                {appointments.filter(apt => apt.date === new Date().toISOString().split('T')[0]).length === 0 && (
+                        </span>
+                      </div>
+                    );
+                  })}
+                {appointments.filter(apt => {
+                  const aptDate = new Date(apt.dateTime).toISOString().split('T')[0];
+                  const today = new Date().toISOString().split('T')[0];
+                  return aptDate === today;
+                }).length === 0 && (
                   <p className="text-center text-gray-500 py-8">No appointments scheduled for today</p>
                 )}
               </div>

@@ -581,7 +581,10 @@ export default function AdminDashboard() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  </tr>{
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {appointments.map((apt) => {
                     const { date, time } = formatDateTime(apt.dateTime);
                     return (
                       <tr key={apt.id}>
@@ -608,10 +611,7 @@ export default function AdminDashboard() {
                         </td>
                       </tr>
                     );
-                  }     </span>
-                      </td>
-                    </tr>
-                  ))}
+                  })}
                 </tbody>
               </table>
             </div>
