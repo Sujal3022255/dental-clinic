@@ -72,6 +72,8 @@ export default function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showContentModal, setShowContentModal] = useState(false);
   const [selectedContent, setSelectedContent] = useState<any>(null);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedDentist, setSelectedDentist] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -94,6 +96,17 @@ export default function AdminDashboard() {
     imageUrl: '',
     documentUrl: '',
     tags: [] as string[]
+  });
+
+  // Schedule form states
+  const [scheduleFormData, setScheduleFormData] = useState({
+    monday: { startTime: '09:00', endTime: '17:00', isOpen: true },
+    tuesday: { startTime: '09:00', endTime: '17:00', isOpen: true },
+    wednesday: { startTime: '09:00', endTime: '17:00', isOpen: true },
+    thursday: { startTime: '09:00', endTime: '17:00', isOpen: true },
+    friday: { startTime: '09:00', endTime: '17:00', isOpen: true },
+    saturday: { startTime: '', endTime: '', isOpen: false },
+    sunday: { startTime: '', endTime: '', isOpen: false }
   });
 
   useEffect(() => {
@@ -365,6 +378,51 @@ export default function AdminDashboard() {
       documentUrl: '',
       tags: []
     });
+  };
+
+  const openScheduleModal = (dentist: any) => {
+    setSelectedDentist(dentist);
+    // Load existing schedule from localStorage or API
+    const savedSchedule = localStorage.getItem(`dentist_schedule_${dentist.id}`);
+    if (savedSchedule) {
+      setScheduleFormData(JSON.parse(savedSchedule));
+    } else {
+      // Reset to defaults
+      setScheduleFormData({
+        monday: { startTime: '09:00', endTime: '17:00', isOpen: true },
+        tuesday: { startTime: '09:00', endTime: '17:00', isOpen: true },
+        wednesday: { startTime: '09:00', endTime: '17:00', isOpen: true },
+        thursday: { startTime: '09:00', endTime: '17:00', isOpen: true },
+        friday: { startTime: '09:00', endTime: '17:00', isOpen: true },
+        saturday: { startTime: '', endTime: '', isOpen: false },
+        sunday: { startTime: '', endTime: '', isOpen: false }
+      });
+    }
+    setShowScheduleModal(true);
+  };
+
+  const handleSaveSchedule = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      if (!selectedDentist) return;
+
+      // Save to localStorage (in a real app, this would be an API call)
+      localStorage.setItem(`dentist_schedule_${selectedDentist.id}`, JSON.stringify(scheduleFormData));
+
+      // Here you would also make an API call to update the backend
+      // Example: await dentistService.updateSchedule(selectedDentist.id, scheduleFormData);
+
+      alert('Schedule updated successfully!');
+      setShowScheduleModal(false);
+      setSelectedDentist(null);
+    } catch (error: any) {
+      console.error('Failed to save schedule:', error);
+      setError('Failed to save schedule');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const stats = {
@@ -1121,7 +1179,10 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="mt-6 pt-4 border-t">
-                    <button className="w-full py-2 px-4 bg-[#0b8fac] text-white rounded-lg hover:bg-[#096f85] font-medium transition">
+                    <button
+                      onClick={() => openScheduleModal(dentist)}
+                      className="w-full py-2 px-4 bg-[#0b8fac] text-white rounded-lg hover:bg-[#096f85] font-medium transition"
+                    >
                       Edit Schedule
                     </button>
                   </div>
