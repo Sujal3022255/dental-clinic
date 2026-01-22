@@ -183,13 +183,19 @@ export default function AdminDashboard() {
       return;
     }
 
+    // Frontend validation
+    if (formData.password.length < 6) {
+      alert('Password must be at least 6 characters');
+      return;
+    }
+
     try {
       setLoading(true);
-      const [firstName, ...lastNameParts] = formData.full_name.split(' ');
+      const [firstName, ...lastNameParts] = formData.full_name.trim().split(/\s+/);
       const lastName = lastNameParts.join(' ') || firstName;
 
       // Validate dentist-specific fields
-      if (formData.role === 'dentist' && !formData.licenseNumber) {
+      if (formData.role === 'dentist' && !formData.licenseNumber?.trim()) {
         alert('License number is required for dentists');
         setLoading(false);
         return;
@@ -232,7 +238,16 @@ export default function AdminDashboard() {
       alert('User created successfully!');
     } catch (error: any) {
       console.error('Failed to create user:', error);
-      alert(error.response?.data?.error || 'Failed to create user');
+      // Show detailed error message
+      let errorMsg = 'Failed to create user';
+      if (error.response?.data?.details) {
+        // Show validation errors
+        const details = error.response.data.details;
+        errorMsg = details.map((d: any) => `${d.field}: ${d.message}`).join('\n');
+      } else if (error.response?.data?.error) {
+        errorMsg = error.response.data.error;
+      }
+      alert(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -806,7 +821,10 @@ export default function AdminDashboard() {
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                        placeholder="Minimum 6 characters"
+                        minLength={6}
                       />
+                      <p className="text-xs text-gray-500 mt-1">Minimum 6 characters required</p>
                     </div>
 
                     <button
@@ -898,8 +916,15 @@ export default function AdminDashboard() {
               </div>
               <button
                 onClick={() => {
-                  resetForm();
-                  setFormData({ ...formData, role: 'patient' });
+                  setFormData({
+                    email: '',
+                    full_name: '',
+                    phone: '',
+                    role: 'patient',
+                    password: '',
+                    specialization: '',
+                    licenseNumber: ''
+                  });
                   setShowAddUserModal(true);
                 }}
                 className="flex items-center space-x-2 bg-[#0b8fac] text-white px-6 py-3 rounded-lg hover:bg-[#096f85] transition"
@@ -988,8 +1013,15 @@ export default function AdminDashboard() {
               </div>
               <button
                 onClick={() => {
-                  resetForm();
-                  setFormData({ ...formData, role: 'dentist' });
+                  setFormData({
+                    email: '',
+                    full_name: '',
+                    phone: '',
+                    role: 'dentist',
+                    password: '',
+                    specialization: '',
+                    licenseNumber: ''
+                  });
                   setShowAddUserModal(true);
                 }}
                 className="flex items-center space-x-2 bg-[#0b8fac] text-white px-6 py-3 rounded-lg hover:bg-[#096f85] transition"
