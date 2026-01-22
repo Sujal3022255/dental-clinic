@@ -1,5 +1,6 @@
 import { Activity, Heart, Shield, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import logo from "../assets/dental-clinic-logo.svg";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -10,25 +11,11 @@ export default function Home() {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <svg width="180" height="60" viewBox="0 0 180 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* DENTAL text */}
-                <text x="0" y="35" fontFamily="Arial, sans-serif" fontSize="32" fontWeight="800" fill="#2C3E50">
-                  DENT
-                </text>
-                {/* Tooth icon */}
-                <path d="M115 15 L125 15 L127 25 L123 35 L117 35 L113 25 Z" fill="#0b8fac" stroke="#0b8fac" strokeWidth="2"/>
-                <path d="M117 18 L123 18 L124 22 L121 28 L119 28 L116 22 Z" fill="#fff"/>
-                {/* AL text */}
-                <text x="130" y="35" fontFamily="Arial, sans-serif" fontSize="32" fontWeight="800" fill="#2C3E50">
-                  AL
-                </text>
-                {/* CLINIC text */}
-                <text x="35" y="52" fontFamily="Arial, sans-serif" fontSize="14" fontWeight="400" fill="#5A6C7D" letterSpacing="3">
-                  CLINIC
-                </text>
-              </svg>
-            </div>
+            <img
+              src={logo}
+              alt="Dental Clinic Logo"
+              className="h-16 w-auto"
+            />
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate('/login')}
