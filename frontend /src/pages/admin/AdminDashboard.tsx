@@ -76,6 +76,7 @@ export default function AdminDashboard() {
   const [selectedDentist, setSelectedDentist] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [userFilter, setUserFilter] = useState<'all' | 'patients' | 'dentists'>('all');
   
   // Form states
   const [formData, setFormData] = useState({
@@ -619,13 +620,34 @@ export default function AdminDashboard() {
 
             {/* User Filters */}
             <div className="flex space-x-4 mb-6">
-              <button className="px-4 py-2 bg-white border-2 border-[#0b8fac] text-[#0b8fac] rounded-lg font-medium">
+              <button 
+                onClick={() => setUserFilter('all')}
+                className={`px-4 py-2 bg-white rounded-lg font-medium transition ${
+                  userFilter === 'all' 
+                    ? 'border-2 border-[#0b8fac] text-[#0b8fac]' 
+                    : 'border border-gray-300 text-gray-700 hover:border-[#0b8fac]'
+                }`}
+              >
                 All Users ({stats.totalUsers})
               </button>
-              <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:border-[#0b8fac]">
+              <button 
+                onClick={() => setUserFilter('patients')}
+                className={`px-4 py-2 bg-white rounded-lg font-medium transition ${
+                  userFilter === 'patients' 
+                    ? 'border-2 border-[#0b8fac] text-[#0b8fac]' 
+                    : 'border border-gray-300 text-gray-700 hover:border-[#0b8fac]'
+                }`}
+              >
                 Patients ({stats.patients})
               </button>
-              <button className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:border-[#0b8fac]">
+              <button 
+                onClick={() => setUserFilter('dentists')}
+                className={`px-4 py-2 bg-white rounded-lg font-medium transition ${
+                  userFilter === 'dentists' 
+                    ? 'border-2 border-[#0b8fac] text-[#0b8fac]' 
+                    : 'border border-gray-300 text-gray-700 hover:border-[#0b8fac]'
+                }`}
+              >
                 Dentists ({stats.dentists})
               </button>
             </div>
@@ -643,7 +665,12 @@ export default function AdminDashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
+                  {users.filter(user => {
+                    if (userFilter === 'all') return true;
+                    if (userFilter === 'patients') return user.role === 'patient';
+                    if (userFilter === 'dentists') return user.role === 'dentist';
+                    return true;
+                  }).map((user) => (
                     <tr key={user.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
