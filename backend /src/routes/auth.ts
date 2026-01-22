@@ -10,14 +10,14 @@ const router = Router();
 const validateRegistration = validate([
   body('email').isEmail().withMessage('Must be a valid email').normalizeEmail(),
   body('password')
-    .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .withMessage('Password must contain uppercase, lowercase, and number'),
+    .isLength({ min: 6 })
+    .withMessage('Password must be at least 6 characters'),
   body('role').isIn(['USER', 'PATIENT', 'DENTIST', 'ADMIN']).withMessage('Invalid role'),
-  body('firstName').optional().trim().isLength({ min: 2 }),
-  body('lastName').optional().trim().isLength({ min: 2 }),
-  body('licenseNumber').if(body('role').equals('DENTIST')).notEmpty().withMessage('License required for dentists'),
+  body('firstName').optional().trim(),
+  body('lastName').optional().trim(),
+  body('phone').optional().trim(),
+  body('specialization').optional().trim(),
+  body('licenseNumber').if(body('role').equals('DENTIST')).notEmpty().withMessage('License number is required for dentists'),
 ]);
 
 // Login validation
