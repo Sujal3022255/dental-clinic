@@ -253,17 +253,46 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleEditUser = () => {
+  const handleEditUser = async () => {
     if (!selectedUser) return;
 
-    const updatedUsers = users.map(u =>
-      u.id === selectedUser.id ? { ...u, ...formData } : u
-    );
-    localStorage.setItem('dental_clinic_users', JSON.stringify(updatedUsers));
-    setUsers(updatedUsers);
-    setShowEditUserModal(false);
-    setSelectedUser(null);
-    resetForm();
+    try {
+      setLoading(true);
+      
+      // If editing a dentist, use the dentist API
+      if (formData.role === 'dentist' && selectedUser.id) {
+        const [firstName, ...lastNameParts] = formData.full_name.trim().split(/\s+/);
+        const lastName = lastNameParts.join(' ') || firstName;
+        
+        await dentistService.update(selectedUser.id, {
+          firstName,
+          lastName,
+          phone: formData.phone,
+          specialization: formData.specialization,
+          licenseNumber: formData.licenseNumber
+        });
+        
+        // Reload dentists list
+        await loadDentists();
+        alert('Dentist updated successfully!');
+      } else {
+        // For patients and other users, update localStorage
+        const updatedUsers = users.map(u =>
+          u.id === selectedUser.id ? { ...u, ...formData } : u
+        );
+        localStorage.setItem('dental_clinic_users', JSON.stringify(updatedUsers));
+        setUsers(updatedUsers);
+      }
+      
+      setShowEditUserModal(false);
+      setSelectedUser(null);
+      resetForm();
+    } catch (error: any) {
+      console.error('Failed to update user:', error);
+      alert(error.response?.data?.error || 'Failed to update user');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDeleteUser = (userId: string) => {
@@ -286,14 +315,21 @@ export default function AdminDashboard() {
     });
   };
 
-  const openEditModal = (user: User) => {
+  const openEditModal = (user: User | any) => {
     setSelectedUser(user);
+    // Handle both User format and Dentist format
+    const fullName = user.full_name || `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    const email = user.email || user.user?.email || '';
+    const phone = user.phone || user.user?.phone || '';
+    
     setFormData({
-      email: user.email,
-      full_name: user.full_name,
-      phone: user.phone || '',
+      email: email,
+      full_name: fullName,
+      phone: phone,
       role: user.role,
-      password: ''
+      password: '',
+      specialization: user.specialization || '',
+      licenseNumber: user.licenseNumber || ''
     });
     setShowEditUserModal(true);
   };
@@ -892,6 +928,37 @@ export default function AdminDashboard() {
                         <option value="admin">Admin</option>
                       </select>
                     </div>
+
+                    {/* Dentist-specific fields in edit mode */}
+                    {formData.role === 'dentist' && (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Specialization <span className="text-gray-500">(optional)</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.specialization}
+                            onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                            placeholder="e.g., Orthodontics, Endodontics"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            License Number <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.licenseNumber}
+                            onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
+                            placeholder="e.g., DDS-2024-105"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent"
+                            required
+                          />
+                        </div>
+                      </>
+                    )}
 
                     <button
                       onClick={handleEditUser}
