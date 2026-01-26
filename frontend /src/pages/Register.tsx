@@ -41,6 +41,16 @@ export default function Register() {
       return;
     }
 
+    // Validate password strength (uppercase, lowercase, and number)
+    const hasUppercase = /[A-Z]/.test(formData.password);
+    const hasLowercase = /[a-z]/.test(formData.password);
+    const hasNumber = /[0-9]/.test(formData.password);
+    
+    if (!hasUppercase || !hasLowercase || !hasNumber) {
+      setError('Password must contain at least one uppercase letter, one lowercase letter, and one number');
+      return;
+    }
+
     if (formData.role === 'DENTIST' && !formData.licenseNumber) {
       setError('License number is required for dentists');
       return;
@@ -222,7 +232,7 @@ export default function Register() {
                   onChange={handleChange}
                   required
                   className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0b8fac] focus:border-transparent transition"
-                  placeholder="Minimum 6 characters"
+                  placeholder="Enter a strong password"
                 />
                 <button
                   type="button"
@@ -232,6 +242,9 @@ export default function Register() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Use at least 6 characters with uppercase, lowercase, and numbers
+              </p>
             </div>
 
             <div>

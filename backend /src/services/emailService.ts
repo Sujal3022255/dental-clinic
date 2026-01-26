@@ -8,26 +8,39 @@ const EMAIL_USER = process.env.EMAIL_USER || '';
 const EMAIL_PASS = process.env.EMAIL_PASS || '';
 const EMAIL_FROM = process.env.EMAIL_FROM || 'noreply@dentalclinic.com';
 
-// Create reusable transporter
-const transporter = nodemailer.createTransport({
-  host: EMAIL_HOST,
-  port: EMAIL_PORT,
-  secure: EMAIL_PORT === 465, // true for 465, false for other ports
-  auth: {
-    user: EMAIL_USER,
-    pass: EMAIL_PASS,
-  },
-});
+// Check if email is configured
+const isEmailConfigured = EMAIL_USER && EMAIL_PASS;
+
+// Create reusable transporter only if credentials are provided
+let transporter: nodemailer.Transporter | null = null;
+
+if (isEmailConfigured) {
+  transporter = nodemailer.createTransport({
+    host: EMAIL_HOST,
+    port: EMAIL_PORT,
+    secure: EMAIL_PORT === 465, // true for 465, false for other ports
+    auth: {
+      user: EMAIL_USER,
+      pass: EMAIL_PASS,
+    },
+  });
+}
 
 // Verify transporter configuration
 export const verifyEmailConfig = async (): Promise<boolean> => {
+  if (!isEmailConfigured) {
+    console.log('ℹ️  Email service not configured. Email notifications will be disabled.');
+    console.log('   To enable emails, add EMAIL_USER and EMAIL_PASS to your .env file');
+    return false;
+  }
+
   try {
-    await transporter.verify();
+    await transporter!.verify();
     console.log('✅ Email service is ready');
     return true;
   } catch (error) {
     console.error('❌ Email service error:', error);
-    console.log('⚠️  Email notifications will not be sent. Configure EMAIL_USER and EMAIL_PASS in .env');
+    console.log('⚠️  Email notifications will not be sent due to configuration error');
     return false;
   }
 };
@@ -146,6 +159,10 @@ Dental Clinic Management System
   };
 
   try {
+    if (!transporter) {
+      console.log('⚠️  Email not configured. Skipping confirmation email.');
+      return;
+    }
     await transporter.sendMail(mailOptions);
     console.log(`✅ Confirmation email sent to ${appointment.patient.user.email}`);
   } catch (error) {
@@ -230,6 +247,10 @@ export const sendAppointmentReminder = async (
   };
 
   try {
+    if (!transporter) {
+      console.log('⚠️  Email not configured. Skipping reminder email.');
+      return;
+    }
     await transporter.sendMail(mailOptions);
     console.log(`✅ Reminder email sent to ${appointment.patient.user.email}`);
   } catch (error) {
@@ -280,6 +301,10 @@ export const sendAppointmentStatusUpdate = async (
   };
 
   try {
+    if (!transporter) {
+      console.log('⚠️  Email not configured. Skipping status update email.');
+      return;
+    }
     await transporter.sendMail(mailOptions);
     console.log(`✅ Status update email sent to ${appointment.patient.user.email}`);
   } catch (error) {
@@ -322,6 +347,10 @@ export const sendWelcomeEmail = async (email: string, name: string, role: string
   };
 
   try {
+    if (!transporter) {
+      console.log('⚠️  Email not configured. Skipping welcome email.');
+      return;
+    }
     await transporter.sendMail(mailOptions);
     console.log(`✅ Welcome email sent to ${email}`);
   } catch (error) {
