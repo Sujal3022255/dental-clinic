@@ -50,6 +50,103 @@ interface AppointmentWithDetails extends Appointment {
   dentist: Dentist & { user: User };
 }
 
+// Send OTP verification email
+export const sendOTPEmail = async (email: string, otp: string, name?: string): Promise<void> => {
+  if (!transporter) {
+    console.log('⚠️  Email not configured. OTP:', otp);
+    return;
+  }
+
+  const mailOptions = {
+    from: EMAIL_FROM,
+    to: email,
+    subject: 'Email Verification - Dental Clinic',
+    html: `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #0b8fac 0%, #096f85 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .otp-box { background: white; border: 2px dashed #0b8fac; padding: 20px; margin: 20px 0; text-align: center; border-radius: 10px; }
+          .otp-code { font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #0b8fac; font-family: monospace; }
+          .info-box { background: #e8f4f8; padding: 15px; margin: 20px 0; border-left: 4px solid #0b8fac; border-radius: 5px; }
+          .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+          .warning { color: #ff6b6b; font-size: 14px; margin-top: 15px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🦷 Dental Clinic</h1>
+            <p>Email Verification</p>
+          </div>
+          <div class="content">
+            <h2>Hello${name ? ' ' + name : ''}!</h2>
+            <p>Thank you for registering with Dental Clinic Management System.</p>
+            <p>To complete your registration, please verify your email address using the OTP below:</p>
+            
+            <div class="otp-box">
+              <p style="margin: 0; color: #666; font-size: 14px;">Your Verification Code</p>
+              <div class="otp-code">${otp}</div>
+              <p style="margin: 10px 0 0 0; color: #666; font-size: 12px;">Valid for 10 minutes</p>
+            </div>
+
+            <div class="info-box">
+              <p style="margin: 0;"><strong>⏱️ Important:</strong></p>
+              <ul style="margin: 10px 0;">
+                <li>This OTP will expire in <strong>10 minutes</strong></li>
+                <li>Do not share this code with anyone</li>
+                <li>If you didn't request this, please ignore this email</li>
+              </ul>
+            </div>
+
+            <p class="warning">⚠️ For security reasons, never share your OTP with anyone, including our staff.</p>
+          </div>
+          <div class="footer">
+            <p>Dental Clinic Management System</p>
+            <p>This is an automated email. Please do not reply.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `,
+    text: `
+Email Verification - Dental Clinic
+
+Hello${name ? ' ' + name : ''}!
+
+Thank you for registering with Dental Clinic Management System.
+
+Your verification code is: ${otp}
+
+This code will expire in 10 minutes.
+
+Important:
+- Do not share this code with anyone
+- If you didn't request this, please ignore this email
+
+Thank you,
+Dental Clinic Management System
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ OTP email sent to ${email}`);
+  } catch (error) {
+    console.error('❌ Failed to send OTP email:', error);
+    throw error;
+  }
+};
+
+interface AppointmentWithDetails extends Appointment {
+  patient: Patient & { user: User };
+  dentist: Dentist & { user: User };
+}
+
 // Send appointment confirmation email
 export const sendAppointmentConfirmation = async (
   appointment: AppointmentWithDetails
