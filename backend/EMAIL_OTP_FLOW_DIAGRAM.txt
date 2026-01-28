@@ -1,0 +1,371 @@
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    EMAIL OTP VERIFICATION - COMPLETE FLOW                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+════════════════════════════════════════════════════════════════════════════════
+                            FRONTEND FLOW
+════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 1: Registration Form                                                  │
+│ File: frontend/src/pages/Register.tsx                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    User fills form and clicks "Register"
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ Frontend Validation:                             │
+        │ - Email format ✓                                 │
+        │ - Password strength ✓                            │
+        │ - Password match ✓                               │
+        │ - Required fields ✓                              │
+        └──────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ API Call:                                        │
+        │ POST /api/auth/register/initiate                 │
+        │ {                                                │
+        │   email: "user@gmail.com",                       │
+        │   password: "SecurePass123",                     │
+        │   firstName: "John",                             │
+        │   lastName: "Doe",                               │
+        │   role: "PATIENT"                                │
+        │ }                                                │
+        └──────────────────────────────────────────────────┘
+                                    │
+════════════════════════════════════════════════════════════════════════════════
+                            BACKEND FLOW
+════════════════════════════════════════════════════════════════════════════════
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 2: Initiate Registration                                              │
+│ File: backend/src/controllers/authController.ts                            │
+│ Function: initiateRegistration()                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+                    ▼                               ▼
+        ┌──────────────────────┐      ┌──────────────────────┐
+        │ 1. Validate Request  │      │ 2. Check Duplicate   │
+        │ - Email format       │      │    Email in DB       │
+        │ - Password strength  │      │                      │
+        │ - Required fields    │      │ ❌ If exists: Error  │
+        └──────────────────────┘      └──────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 3: Generate OTP                                                       │
+│ File: backend/src/services/otpService.ts                                   │
+│ Function: createOTP()                                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ OTP Generation:                                  │
+        │ - Generate 6-digit code: crypto.randomInt()      │
+        │ - Set expiry: 10 minutes from now                │
+        │ - Save to database:                              │
+        │   {                                              │
+        │     email: "user@gmail.com",                     │
+        │     otp: "123456",                               │
+        │     expiresAt: "2026-01-28T10:15:00Z",          │
+        │     verified: false                              │
+        │   }                                              │
+        └──────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 4: Send Email                                                         │
+│ File: backend/src/services/emailService.ts                                 │
+│ Function: sendOTPEmail()                                                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+                    ▼                               ▼
+        ┌──────────────────────┐      ┌──────────────────────┐
+        │ ⚠️ CURRENT ISSUE:    │      │ ✅ WHEN CONFIGURED:  │
+        │                      │      │                      │
+        │ EMAIL_USER=          │      │ EMAIL_USER=          │
+        │   your-email@...     │      │   real@gmail.com     │
+        │ EMAIL_PASS=          │      │ EMAIL_PASS=          │
+        │   your-gmail-app...  │      │   abcd1234efgh5678   │
+        │                      │      │                      │
+        │ ❌ Email NOT sent    │      │ ✅ Email SENT via    │
+        │ ❌ Returns early     │      │    SMTP Gmail        │
+        │ ⚠️ OTP logged to    │      │ ✉️ User receives     │
+        │    console only      │      │    email in inbox    │
+        └──────────────────────┘      └──────────────────────┘
+                    │                               │
+                    └───────────────┬───────────────┘
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ Email Template (when configured):                │
+        │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━│
+        │ From: Dental Clinic <noreply@dentalclinic.com>  │
+        │ To: user@gmail.com                               │
+        │ Subject: Your Verification Code                  │
+        │                                                  │
+        │ Hi John,                                         │
+        │                                                  │
+        │ Your verification code is:                       │
+        │ ┌──────────────┐                                │
+        │ │   123456     │                                │
+        │ └──────────────┘                                │
+        │                                                  │
+        │ This code expires in 10 minutes.                 │
+        │ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━│
+        └──────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ Response to Frontend:                            │
+        │ {                                                │
+        │   message: "OTP sent to your email",             │
+        │   otp: "123456" // Only in development mode      │
+        │ }                                                │
+        └──────────────────────────────────────────────────┘
+                                    │
+════════════════════════════════════════════════════════════════════════════════
+                        FRONTEND - OTP VERIFICATION
+════════════════════════════════════════════════════════════════════════════════
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 5: OTP Input Screen                                                   │
+│ File: frontend/src/components/OTPInput.tsx                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ OTP Input Component:                             │
+        │ ┌───┬───┬───┬───┬───┬───┐                       │
+        │ │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │                       │
+        │ └───┴───┴───┴───┴───┴───┘                       │
+        │                                                  │
+        │ Features:                                        │
+        │ - Auto-focus next input                          │
+        │ - Backspace navigation                           │
+        │ - Paste full code support                        │
+        │ - Auto-submit on complete                        │
+        └──────────────────────────────────────────────────┘
+                                    │
+                User enters 6-digit code from email
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ API Call:                                        │
+        │ POST /api/auth/register/verify                   │
+        │ {                                                │
+        │   email: "user@gmail.com",                       │
+        │   otp: "123456"                                  │
+        │ }                                                │
+        └──────────────────────────────────────────────────┘
+                                    │
+════════════════════════════════════════════════════════════════════════════════
+                        BACKEND - VERIFY OTP
+════════════════════════════════════════════════════════════════════════════════
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 6: Verify OTP                                                         │
+│ File: backend/src/controllers/authController.ts                            │
+│ Function: verifyOTPAndRegister()                                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+                    ▼                               ▼
+        ┌──────────────────────┐      ┌──────────────────────┐
+        │ 1. Find OTP in DB    │      │ 2. Validate OTP      │
+        │                      │      │                      │
+        │ WHERE:               │      │ ❌ Not found: Error  │
+        │ - email matches      │      │ ❌ Already used      │
+        │ - otp matches        │      │ ❌ Expired: Error    │
+        │ - not verified       │      │ ✅ Valid: Proceed    │
+        └──────────────────────┘      └──────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 7: Create User Account                                                │
+│ File: backend/src/controllers/authController.ts                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ Transaction:                                     │
+        │                                                  │
+        │ 1. Mark OTP as verified                          │
+        │    UPDATE EmailOTP SET verified = true           │
+        │                                                  │
+        │ 2. Create User:                                  │
+        │    INSERT INTO User {                            │
+        │      email: "user@gmail.com",                    │
+        │      password: "hashed_password",                │
+        │      firstName: "John",                          │
+        │      lastName: "Doe",                            │
+        │      role: "PATIENT",                            │
+        │      emailVerified: true,  ✓                     │
+        │      createdAt: now                              │
+        │    }                                             │
+        │                                                  │
+        │ 3. Generate JWT Token:                           │
+        │    token = jwt.sign({                            │
+        │      userId: user.id,                            │
+        │      email: user.email,                          │
+        │      role: user.role                             │
+        │    }, JWT_SECRET, { expiresIn: '24h' })          │
+        └──────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ Response to Frontend:                            │
+        │ {                                                │
+        │   message: "Registration successful",            │
+        │   token: "eyJhbGciOiJIUzI1NiIs...",              │
+        │   user: {                                        │
+        │     id: "uuid",                                  │
+        │     email: "user@gmail.com",                     │
+        │     firstName: "John",                           │
+        │     lastName: "Doe",                             │
+        │     role: "PATIENT",                             │
+        │     emailVerified: true                          │
+        │   }                                              │
+        │ }                                                │
+        └──────────────────────────────────────────────────┘
+                                    │
+════════════════════════════════════════════════════════════════════════════════
+                        FRONTEND - REDIRECT TO DASHBOARD
+════════════════════════════════════════════════════════════════════════════════
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ STEP 8: Store Auth & Redirect                                              │
+│ File: frontend/src/pages/Register.tsx                                      │
+│ Function: handleOTPComplete()                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ 1. Store in localStorage:                        │
+        │    localStorage.setItem('token', token)          │
+        │    localStorage.setItem('user', JSON.stringify)  │
+        │                                                  │
+        │ 2. Determine dashboard route by role:            │
+        │    PATIENT  → /patient/dashboard                 │
+        │    DENTIST  → /dentist/dashboard                 │
+        │    ADMIN    → /admin/dashboard                   │
+        │                                                  │
+        │ 3. Navigate to dashboard:                        │
+        │    navigate('/patient/dashboard')                │
+        └──────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ ✅ SUCCESS! User is now:                         │
+        │ - Registered ✓                                   │
+        │ - Email verified ✓                               │
+        │ - Authenticated ✓                                │
+        │ - On dashboard ✓                                 │
+        └──────────────────────────────────────────────────┘
+
+════════════════════════════════════════════════════════════════════════════════
+                            RESEND OTP FLOW
+════════════════════════════════════════════════════════════════════════════════
+
+        User clicks "Resend OTP" button
+                    │
+                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ POST /api/auth/register/resend                   │
+        │ { email: "user@gmail.com" }                      │
+        └──────────────────────────────────────────────────┘
+                    │
+                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ Backend checks rate limit:                       │
+        │ - Max 3 OTP requests per 5 minutes               │
+        │ - If exceeded: Return 429 Too Many Requests      │
+        │ - If OK: Generate new OTP and send email         │
+        └──────────────────────────────────────────────────┘
+                    │
+                    ▼
+        ┌──────────────────────────────────────────────────┐
+        │ Frontend shows 60-second cooldown:               │
+        │ "Resend OTP in 59 seconds..."                    │
+        │ "Resend OTP in 58 seconds..."                    │
+        │ ...                                              │
+        │ "Resend OTP" (button enabled after countdown)    │
+        └──────────────────────────────────────────────────┘
+
+════════════════════════════════════════════════════════════════════════════════
+                            ERROR HANDLING
+════════════════════════════════════════════════════════════════════════════════
+
+┌────────────────────────────────────┬────────────────────────────────────────┐
+│ Error Scenario                     │ Handling                               │
+├────────────────────────────────────┼────────────────────────────────────────┤
+│ Invalid email format               │ Frontend validation blocks submission  │
+│ Weak password                      │ Frontend shows password requirements   │
+│ Email already registered           │ Backend returns 400: Email exists      │
+│ Invalid OTP                        │ Backend returns 400: Invalid OTP       │
+│ Expired OTP (>10 min)              │ Backend returns 400: OTP expired       │
+│ OTP already used                   │ Backend returns 400: OTP already used  │
+│ Too many resend attempts           │ Backend returns 429: Rate limit        │
+│ Email service not configured       │ OTP logged to console, no email sent   │
+│ SMTP connection failed             │ Logged, user can still use OTP         │
+└────────────────────────────────────┴────────────────────────────────────────┘
+
+════════════════════════════════════════════════════════════════════════════════
+                            DATABASE TABLES
+════════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ EmailOTP Table                                                              │
+├────────────────┬────────────────────┬───────────────────────────────────────┤
+│ Field          │ Type               │ Description                           │
+├────────────────┼────────────────────┼───────────────────────────────────────┤
+│ id             │ UUID               │ Primary key                           │
+│ email          │ String             │ User's email address                  │
+│ otp            │ String             │ 6-digit verification code             │
+│ expiresAt      │ DateTime           │ Expiry time (10 min from creation)    │
+│ verified       │ Boolean            │ Whether OTP has been used             │
+│ createdAt      │ DateTime           │ Timestamp of creation                 │
+└────────────────┴────────────────────┴───────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ User Table (after verification)                                            │
+├────────────────┬────────────────────┬───────────────────────────────────────┤
+│ Field          │ Type               │ Value After OTP Verification          │
+├────────────────┼────────────────────┼───────────────────────────────────────┤
+│ id             │ UUID               │ Auto-generated                        │
+│ email          │ String             │ From registration form                │
+│ password       │ String             │ Bcrypt hashed                         │
+│ firstName      │ String             │ From registration form                │
+│ lastName       │ String             │ From registration form                │
+│ role           │ Enum               │ PATIENT/DENTIST/ADMIN                 │
+│ emailVerified  │ Boolean            │ ✅ TRUE (set after OTP verification)  │
+│ createdAt      │ DateTime           │ Timestamp of account creation         │
+└────────────────┴────────────────────┴───────────────────────────────────────┘
+
+════════════════════════════════════════════════════════════════════════════════
+                            SECURITY FEATURES
+════════════════════════════════════════════════════════════════════════════════
+
+✅ Password Hashing: bcrypt with 10 rounds
+✅ OTP Cryptographic: crypto.randomInt() for secure generation
+✅ OTP Expiry: 10-minute time limit
+✅ OTP Single-Use: Marked as verified after first use
+✅ Rate Limiting: 3 OTP requests per 5 minutes per email
+✅ Email Verification: Required before dashboard access
+✅ JWT Tokens: 24-hour access token, 7-day refresh token
+✅ Input Validation: express-validator on all endpoints
+✅ CORS Protection: Configured for frontend origin
+✅ Helmet.js: Security headers
+
+════════════════════════════════════════════════════════════════════════════════
